@@ -1,10 +1,11 @@
 package com.example.http_example
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.widget.Toast
 import androidx.annotation.WorkerThread
+import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONArray
 import org.json.JSONObject
@@ -16,6 +17,7 @@ import java.net.URL
 private const val ENDPOINT = "http://10.0.2.2:3000"  // Im using json-server running on my localhost and emulator
 private const val BOOKS_URI = "/books"
 private const val TITLE = "title"
+var books = mutableListOf<String>()
 
 class MainActivity : AppCompatActivity() {
 
@@ -31,6 +33,16 @@ class MainActivity : AppCompatActivity() {
         Thread {
         getBooksAndShowIt()
         }.start()
+
+        button2.setOnClickListener{
+            val delFragment = DelFragment()
+
+            val booksforDel = Bundle()
+            booksforDel.putStringArrayList("books", books as ArrayList<String>)
+            delFragment.setArguments(booksforDel)
+            val manager = supportFragmentManager
+            delFragment.show(manager,"Delete Book")
+        }
     }
 
     @WorkerThread
@@ -51,7 +63,7 @@ class MainActivity : AppCompatActivity() {
             text = it.readText()
         }
 
-        val books = mutableListOf<String>()
+        //var books = mutableListOf<String>()
         val json = JSONArray(text)
         for (i in 0 until json.length()) {
             val jsonBook = json.getJSONObject(i)
@@ -84,5 +96,12 @@ class MainActivity : AppCompatActivity() {
         httpUrlConnection.disconnect()
         getBooksAndShowIt()
     }
+
+    fun okClicked(selectedItem: String) {
+        Toast.makeText(getApplicationContext(), "Choose the Button OK - " + selectedItem,Toast.LENGTH_LONG).show();
+    }
+
+
+
 
 }
