@@ -3,9 +3,11 @@ package com.example.http_example
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.widget.Toast
 import androidx.annotation.WorkerThread
 import androidx.appcompat.app.AppCompatActivity
+import com.example.http_example.model.Book
 import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONArray
 import org.json.JSONObject
@@ -13,11 +15,19 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
+import kotlin.collections.reduce as reduce
+
 
 private const val ENDPOINT = "http://10.0.2.2:3000"  // Im using json-server running on my localhost and emulator
 private const val BOOKS_URI = "/books"
 private const val TITLE = "title"
-var books = mutableListOf<String>()
+private const val ID = "id"
+private const val TAG = "Message"
+
+
+
+var books = mutableListOf<Book>()
+var bookfordel = mutableListOf<String>()
 
 class MainActivity : AppCompatActivity() {
 
@@ -34,11 +44,11 @@ class MainActivity : AppCompatActivity() {
         getBooksAndShowIt()
         }.start()
 
+
         button2.setOnClickListener{
             val delFragment = DelFragment()
-
             val booksforDel = Bundle()
-            booksforDel.putStringArrayList("books", books as ArrayList<String>)
+            booksforDel.putStringArrayList("books", bookfordel as ArrayList<String>)
             delFragment.setArguments(booksforDel)
             val manager = supportFragmentManager
             delFragment.show(manager,"Delete Book")
@@ -55,6 +65,7 @@ class MainActivity : AppCompatActivity() {
         }
         if (httpUrlConnection.responseCode != HttpURLConnection.HTTP_OK) {
             // show error toast
+            Toast.makeText(this, "Response code is ${httpUrlConnection.responseCode}", Toast.LENGTH_SHORT).show()
             return
         }
         val streamReader = InputStreamReader(httpUrlConnection.inputStream)
@@ -62,20 +73,26 @@ class MainActivity : AppCompatActivity() {
         streamReader.use {
             text = it.readText()
         }
-
+        books.clear()
+        bookfordel.clear()
         //var books = mutableListOf<String>()
         val json = JSONArray(text)
         for (i in 0 until json.length()) {
             val jsonBook = json.getJSONObject(i)
             val title = jsonBook.getString(TITLE)
-            books.add(title)
+            val id = jsonBook.getInt(ID)
+            books.add(Book(title, id))
+            bookfordel.add(title)
         }
         httpUrlConnection.disconnect()
 
         Handler(Looper.getMainLooper()).post {
-            textView.text = books.reduce { acc, s -> "$acc\n$s" }
+            textView.text = books.map(Book::title).joinToString("\n")
+
         }
     }
+
+
 
     @WorkerThread
     fun addBook(book: String) {
@@ -92,16 +109,37 @@ class MainActivity : AppCompatActivity() {
         OutputStreamWriter(httpUrlConnection.outputStream).use {
             it.write(body.toString())
         }
+
         httpUrlConnection.responseCode
         httpUrlConnection.disconnect()
         getBooksAndShowIt()
     }
 
-    fun okClicked(selectedItem: String) {
-        Toast.makeText(getApplicationContext(), "Choose the Button OK - " + selectedItem,Toast.LENGTH_LONG).show();
+    @WorkerThread
+    fun delBook(selectedItem:Int) {
+        var httpUrlConnection: HttpURLConnection? = null
+        System.out.println("selectedItem - "+selectedItem)
+
+        val id = books.map(Book::id).get(selectedItem)
+
+        System.out.println("id - "+id)
+
+
+        try {
+            httpUrlConnection = URL(ENDPOINT + BOOKS_URI + "/${id}").openConnection() as HttpURLConnection
+            httpUrlConnection.apply {
+                connectTimeout = 10000 // 10 seconds
+                requestMethod = "DELETE"
+                setRequestProperty("Content-Type", "application/json")
+            }
+            httpUrlConnection.responseCode
+        } catch (exc: Exception) {
+            Log.e(TAG, "removeBook", exc)
+        } finally {
+            httpUrlConnection?.disconnect()
+        }
+        getBooksAndShowIt()
     }
 
+    }
 
-
-
-}

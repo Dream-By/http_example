@@ -9,25 +9,27 @@ import androidx.fragment.app.DialogFragment
 
 class DelFragment : DialogFragment() {
 
-    //private var BookNames = arrayOf<String>()
-    //var booksForDelete = arrayListOf<String>()
-    var selectedItem = ""
+
+    var selectedItem = 0
+
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return activity?.let {
             val booksForDelete = getArguments()?.getStringArrayList("books")!!
-            var BookNames = booksForDelete.toTypedArray()
+
             val builder = AlertDialog.Builder(activity)
             val checkedItem = -1
+
             builder.setTitle("Choose the book for DELETE")
-                .setSingleChoiceItems(BookNames,checkedItem){
+                .setSingleChoiceItems(booksForDelete.toTypedArray(),checkedItem){
                     dialog, which ->
-                    Toast.makeText(activity,"Choosen book: ${BookNames[which]}",Toast.LENGTH_SHORT).show()
-                    selectedItem = BookNames[which]
+                    Toast.makeText(activity,"Choosen book: ${booksForDelete.toTypedArray()[which]}",Toast.LENGTH_SHORT).show()
+                    selectedItem = which
                 }
             builder.setPositiveButton("OK") { dialog, which ->
-
-                 (activity as MainActivity?)?.okClicked(selectedItem)            // user clicked OK
+                Thread {
+                 (activity as MainActivity?)?.delBook(selectedItem)            // user clicked OK
+                }.start()
             }
             builder.setNegativeButton("Cancel", null)
             // user clicked Cancel
