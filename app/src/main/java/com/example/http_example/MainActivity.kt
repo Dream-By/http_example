@@ -90,6 +90,7 @@ class MainActivity : AppCompatActivity() {
             textView.text = books.map(Book::title).joinToString("\n")
 
         }
+        editText.text.clear()
     }
 
 
